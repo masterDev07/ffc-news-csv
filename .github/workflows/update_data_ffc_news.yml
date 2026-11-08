@@ -1,0 +1,38 @@
+name: Update Forex Calendar CSV
+
+on:
+  schedule:
+    # Berjalan secara otomatis setiap hari Senin jam 00:05 UTC (07:05 WIB)
+    - cron: '5 0 * * 1'
+  workflow_dispatch: # Mengizinkan Anda untuk menjalankan workflow ini secara manual kapan saja
+
+permissions:
+  contents: write # Diperlukan agar GitHub Actions bisa melakukan commit & push berkas csv
+
+jobs:
+  download-and-save:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Download Forex Factory Calendar
+      run: |
+        curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+        "https://faireconomy.media" \
+        -o ff_calendar_thisweek.csv
+
+    - name: Commit and Push to Repository
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@://github.com"
+
+        # Mengecek apakah ada perubahan berkas agar tidak terjadi error jika data sama
+        if git status --porcelain | grep -q ff_calendar_thisweek.csv; then
+          git add ff_calendar_thisweek.csv
+          git commit -m "Auto-update: Forex Factory Calendar $(date +'%Y-%m-%d')"
+          git push
+        else
+          echo "Tidak ada perubahan data pada kalender."
+        fi
